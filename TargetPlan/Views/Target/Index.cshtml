@@ -139,10 +139,10 @@
 
                 if ($scope.showYesterday) {
                     var d = new Date();
-                    d.setDate(d.getDate() - 1);
+                    d.setDate(d.getDate() - 1); 
                     if (target.date.setHours(0, 0, 0, 0) == d.setHours(0, 0, 0, 0))
                         visible = true;
-                }
+                }     
 
                 if ($scope.showTomorrow) {
                     var d = new Date();
