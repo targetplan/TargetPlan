@@ -11,12 +11,15 @@
     </div>
     <div ng-app="targetApp" ng-controller="targetController">
 
-        <label><input type="checkbox" ng-model="showUndone" />Незавершенные</label>
-        <label><input type="checkbox" ng-model="showDone" />Завершенные</label>
+        <label><input type="checkbox" ng-model="checkDone" />Учесть зав</label>
+        <label><input type="checkbox" ng-model="showUndone" />Незав</label>
+        <label><input type="checkbox" ng-model="showDone" />Зав</label>
+
+        <label><input type="checkbox" ng-model="checkDays" />Учесть все</label>
         <label><input type="checkbox" ng-model="showYesterday" />Вчера</label>
         <label><input type="checkbox" ng-model="showToday" />Сегодня</label>
         <label><input type="checkbox" ng-model="showTomorrow" />Завтра</label>
-        <label><input type="checkbox" ng-model="showAllDays" />Все дни</label>
+        <label><input type="checkbox" ng-model="showSaturday" />Суббота</label>
 
         <div class="form-inline">
             <div class="form-group">
@@ -64,13 +67,15 @@
 
     targetApp.controller("targetController", function ($scope, $http) {
 
+        $scope.checkDone = false;
         $scope.showUndone = false;
         $scope.showDone = false;
-        $scope.showYesterday = true;
+
+        $scope.checkDays = true;
+        $scope.showYesterday = false;
         $scope.showToday = true;
         $scope.showTomorrow = false;
-        $scope.showAllDays = false;
-
+        $scope.showSaturday = false;
 
         $scope.sortparam = 'date';
         $scope.sortDirection = false;
@@ -88,7 +93,7 @@
 
         $scope.refreshData = function () {
             $http({
-                url: 'GetData',
+                url: '/target/GetData',
                 method: "GET"
             }).success(function (data) {
                 var model = {
@@ -107,51 +112,59 @@
 
         $scope.refreshData();
 
+        $scope.set_visibility_done = function (target) {
+            if (!$scope.checkDone)
+                return true;
+            
+            if ($scope.showDone)
+                if (target.done)
+                    return true;
+
+            if ($scope.showUndone)
+                if (!target.done)
+                    return true;
+
+            return false;
+        }
+
+        $scope.set_visibility_day = function (target) {
+            if (!$scope.checkDays)
+                return true;
+
+            if ($scope.showYesterday) {
+                var d = new Date();
+                d.setDate(d.getDate() - 1);
+                if (target.date.setHours(0, 0, 0, 0) == d.setHours(0, 0, 0, 0))
+                    return true;
+            }
+
+            if ($scope.showToday) {
+                var d = new Date();
+                if (target.date.setHours(0, 0, 0, 0) == d.setHours(0, 0, 0, 0))
+                    return true;
+            }
+
+            if ($scope.showTomorrow) {
+                var d = new Date();
+                d.setDate(d.getDate() + 1);
+                if (target.date.setHours(0, 0, 0, 0) == d.setHours(0, 0, 0, 0))
+                    return true;
+            }
+
+            if ($scope.showSaturday) {
+                var d = new Date();
+                var day = d.getDay();
+                var diff = - day + 6;
+                d.setDate(d.getDate() + diff);
+                if (target.date.setHours(0, 0, 0, 0) == d.setHours(0, 0, 0, 0))
+                    return true;
+            }
+
+            return false;
+        }            
+
         $scope.set_visibility = function (target) {
-            var visible = false;
-
-            if ($scope.showDone && $scope.showUndone)
-                return true;
-            else {
-                if ($scope.showDone) {
-                    if (target.done)
-                        visible = true;
-                    else
-                        return false;
-                }
-
-                if ($scope.showUndone) {
-                    if (!target.done)
-                        visible = true;
-                    else
-                        return false;
-                }
-            }
-
-            if ($scope.showAllDays)
-                return true;
-            else {
-                if ($scope.showToday) {
-                    if (target.date.setHours(0, 0, 0, 0) == ((new Date()).setHours(0, 0, 0, 0)))
-                        visible = true;
-                }
-
-                if ($scope.showYesterday) {
-                    var d = new Date();
-                    d.setDate(d.getDate() - 1); 
-                    if (target.date.setHours(0, 0, 0, 0) == d.setHours(0, 0, 0, 0))
-                        visible = true;
-                }     
-
-                if ($scope.showTomorrow) {
-                    var d = new Date();
-                    d.setDate(d.getDate() + 1);
-                    if (target.date.toDateString() === d.toDateString())
-                        visible = true;
-                }
-            }
-
-            return visible;
+            return $scope.set_visibility_done(target) && $scope.set_visibility_day(target);
         };
 
         $scope.set_color = function (target) {
